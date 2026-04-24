@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>MECHE | Colecciones</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@200;400&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-links">
+            <a href="categorias.html">Colección</a>
+            <a href="historia.html">Historia</a>
+        </div>
+        <div class="logo"><a href="index.html" style="text-decoration:none; color:inherit;">MECHE</a></div>
+        <div class="nav-links">
+            <a href="contacto.html" class="active">Contacto</a>
+            <a href="#" id="open-cart-nav">CARRITO (<span id="cart-count">0</span>)</a>
+        </div>
+    </nav>
+
+    <main style="margin-top: 150px;">
+        <div class="filters">
+            <a href="#" class="filter-item active" data-categoria="todos">Todos</a>
+            <a href="#" class="filter-item" data-categoria="buzos">Buzos</a>
+            <a href="#" class="filter-item" data-categoria="remeras">Remeras</a>
+            <a href="#" class="filter-item" data-categoria="pantalones">Pantalones</a>
+            <a href="#" class="filter-item" data-categoria="vestidos">Vestidos</a>
+            <a href="#" class="filter-item" data-categoria="promociones" style="color: #d4a373;">Promociones</a>
+        </div>
+
+        <section class="showroom">
+            
+        </section>
+    </main>
+    <div id="cart-drawer" class="cart-drawer">
+        <div class="cart-header">
+            <h2>Tu Selección</h2>
+            <button id="close-cart">Cerrar —</button>
+        </div>
+
+        <div id="cart-items-container" class="cart-items-container">
+            </div>
+
+        <div class="cart-checkout-footer">
+            <div class="method-selector">
+                <p>Método de Pago:</p>
+                <label><input type="radio" name="payment" value="efectivo" checked> Efectivo (-10%)</label>
+                <label><input type="radio" name="payment" value="tarjeta"> Tarjeta (Lista)</label>
+            </div>
+
+            <div class="coupon-section">
+                <button id="btn-cupon" class="btn-link" onclick="aplicarCupon()">¿Tenés un cupón?</button>
+                <div id="coupon-applied-msg" style="display:none; font-size: 0.7rem; color: #d4a373;">
+                    Cupón aplicado (-5%)
+                </div>
+            </div>
+
+            <div class="total-section">
+                <h3>Total: <span id="cart-total-display">$0</span></h3>
+            </div>
+
+            <button id="btn-finalizar" class="btn-finalizar">FINALIZAR COMPRA</button>
+        </div>
+    </div>
+
+<div id="cart-overlay" class="cart-overlay"></div>
+    <script src="script.js"></script>
+    <div class="social-floating">
+    <a href="https://wa.me/+5491138330847" target="_blank" class="social-icon whatsapp" title="Escribinos por WhatsApp">
+        <img src="https://cdn-icons-png.flaticon.com/512/733/733585.png" alt="WhatsApp">
+    </a>
+    <a href="https://instagram.com/mecheonline_" target="_blank" class="social-icon instagram" title="Seguinos en Instagram">
+        <img src="https://cdn-icons-png.flaticon.com/512/2111/2111463.png" alt="Instagram">
+    </a>
+</div>
+</body>
+</html>

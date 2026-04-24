@@ -1,0 +1,40 @@
+[
+    {
+        "id": 1,
+        "nombre": "Buzo Oversize Liniers",
+        "precio": 18500,
+        "categorias": ["buzos", "invierno", "tendencias"],
+        "color": "Crema",
+        "imagen": "img/prenda1.png",
+        "promo": false
+    },
+    {
+        "id": 2,
+        "nombre": "Campera Nival Negra",
+        "precio": 125000,
+        "categorias": ["camperas", "invierno", "promo"],
+        "color": "Negro",
+        "imagen": "img/prenda2.png",
+        "promo": true,
+        "precio_oferta": 100000
+    },
+    {
+        "id": 3,
+        "nombre": "Remera Básica Esencia",
+        "precio": 8900,
+        "categoria": "remeras",
+        "color": "Blanco",
+        "imagen": "img/prenda1.png",
+        "promo": false
+    },
+    {
+        "id": 4,
+        "nombre": "Pantalón Lino Ancho",
+        "precio": 21000,
+        "categoria": "pantalones",
+        "color": "Beige",
+        "imagen": "img/prenda2.png",
+        "promo": true,
+        "precio_oferta": 15000
+    }
+]
