@@ -6,7 +6,7 @@
         "categorias": ["buzos", "invierno", "tendencias"],
         "color": "Crema",
         "imagen": "img/prenda1.png",
-        "promo": false
+        "promo": true
     },
     {
         "id": 2,
