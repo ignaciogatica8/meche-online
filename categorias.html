@@ -77,5 +77,20 @@
             <img src="https://cdn-icons-png.flaticon.com/512/2111/2111463.png" alt="Instagram">
         </a>
     </div>
+    <div id="product-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-content">
+            <span class="close-modal" onclick="cerrarModalProducto()">&times;</span>
+            <div class="modal-body">
+                <img id="modal-img" src="" alt="Producto">
+                <div class="modal-info">
+                    <h2 id="modal-title">Nombre</h2>
+                    <div id="modal-price" class="price-container"></div>
+                    <p id="modal-desc" class="desc"></p>
+                    <div id="modal-stock" class="stock-status"></div>
+                    <button id="modal-btn-add" class="btn-finalizar" style="margin-top:0;">AGREGAR AL CARRITO</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
