@@ -60,7 +60,7 @@ async function cargarProductos() {
                 color: record.fields.Color || "",
                 imagen: record.fields.Imagen || "",
                 stock: record.fields.Stock, 
-                promo: record.fields.Promo,
+                promo: record.fields.Promo || false,
                 temporada: record.fields.Temporada || false
             };
         });
@@ -86,13 +86,13 @@ function mostrarProductos(lista) {
     lista.forEach(producto => {
         const precioFinal = producto.precio_oferta < producto.precio ? producto.precio_oferta : producto.precio;
         
-        // La imagen ya NO abre el modal. Ahora hay un botón "+ Info" abajo.
+        // El botón + INFO está acá abajo de la etiqueta de precio
         contenedor.innerHTML += `
             <div class="product-card reveal active">
                 <div class="img-container">
                     <img src="${producto.imagen}" alt="${producto.nombre}">
                     <button class="add-to-cart-btn" onclick="agregarAlCarrito('${producto.id}')">Añadir +</button>
-                    ${producto.precio_oferta < producto.precio ? '<span class="tag-promo">SALE</span>' : ''}
+                    ${(producto.promo || producto.precio_oferta < producto.precio) ? '<span class="tag-promo">SALE</span>' : ''}
                 </div>
                 <div class="product-info">
                     <h3>${producto.nombre}</h3>
@@ -243,13 +243,12 @@ async function cargarCarruseles() {
     productosBaseDeDatos.forEach(p => {
         const precioFinal = p.precio_oferta < p.precio ? p.precio_oferta : p.precio;
 
-        // Carrusel ahora tiene el botón + Info
         const html = `
             <div class="product-card reveal active" style="min-width: 280px; flex-shrink: 0; margin-right: 20px;">
                 <div class="img-container">
                     <img src="${p.imagen}" alt="${p.nombre}">
                     <button class="add-to-cart-btn" onclick="agregarAlCarrito('${p.id}')">Añadir +</button>
-                    ${p.precio_oferta < p.precio ? '<span class="tag-promo">SALE</span>' : ''}
+                    ${(p.promo || p.precio_oferta < p.precio) ? '<span class="tag-promo">SALE</span>' : ''}
                 </div>
                 <div class="product-info">
                     <h3>${p.nombre}</h3>
@@ -260,7 +259,7 @@ async function cargarCarruseles() {
             </div>
         `;
         
-        if (p.promo && trackPromos) trackPromos.innerHTML += html;
+        if ((p.promo || p.precio_oferta < p.precio) && trackPromos) trackPromos.innerHTML += html;
         if (p.temporada && trackTemporada) trackTemporada.innerHTML += html;
     });
 }
@@ -269,7 +268,7 @@ async function cargarCarruseles() {
 document.addEventListener('DOMContentLoaded', () => {
     cargarProductos();
 
-    // Filtros de Categorías arreglados
+    // Filtros de Categorías arreglados y mejorados
     document.querySelectorAll('.filter-item').forEach(boton => {
         boton.addEventListener('click', (e) => {
             e.preventDefault();
@@ -281,10 +280,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (cat === 'todos') {
                 mostrarProductos(productosBaseDeDatos);
             } else if (cat === 'promociones') {
-                // Filtro especial para Promociones
-                mostrarProductos(productosBaseDeDatos.filter(p => p.promo === true));
+                // Filtra TODO lo que tenga la casilla Promo tildada O un precio menor al original
+                mostrarProductos(productosBaseDeDatos.filter(p => p.promo || p.precio_oferta < p.precio));
             } else {
-                // Filtro para el resto (Pantalones, Vestidos, etc.)
                 mostrarProductos(productosBaseDeDatos.filter(p => p.categoria === cat || p.categorias.includes(cat)));
             }
         });
