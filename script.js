@@ -7,7 +7,7 @@ let descuentoCupon = 0;
 // CONFIGURACIÓN DE AIRTABLE (Reemplazá con tus datos reales)
 const AIRTABLE_TOKEN = "patSQVTxZDI4Irns8";
 const AIRTABLE_BASE_ID = "appnJ7n0NqpRVeoud";
-const AIRTABLE_TABLE_NAME = "Inventario MECHE";
+const AIRTABLE_TABLE_NAME = "Table 1";
 
 async function cargarCatalogoDesdeAirtable() {
     const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_NAME}`;
@@ -41,7 +41,7 @@ async function cargarCatalogoDesdeAirtable() {
         renderizarProductos(productosActivos);
 
     } catch (error) {
-        console.error("Error al conectar con Airtable:", error);
+        console.error("Hubo un problema al conectar con el inventario de Airtable", error);
     }
 }
 
