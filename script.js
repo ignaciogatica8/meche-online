@@ -3,50 +3,75 @@ let productosBaseDeDatos = [];
 let carrito = [];
 let descuentoCupon = 0;
 
-// --- 1. CARGA DE PRODUCTOS ---
-// CONFIGURACIÓN DE AIRTABLE (Reemplazá con tus datos reales)
+// ==========================================
+// CONFIGURACIÓN DE CONEXIÓN CON AIRTABLE
+// ==========================================
 const AIRTABLE_TOKEN = "patSQVTxZDI4Irns8";
 const AIRTABLE_BASE_ID = "appnJ7n0NqpRVeoud";
-const AIRTABLE_TABLE_NAME = "Table 1";
+const AIRTABLE_TABLE_NAME = "Table 1"; // Importante: Cambiá esto si en Airtable le pusiste otro nombre a la pestaña
 
-async function cargarCatalogoDesdeAirtable() {
-    const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_NAME}`;
-    
+// --- 1. CARGA DE PRODUCTOS DESDE AIRTABLE ---
+async function cargarProductos() {
     try {
+        console.log("Intentando cargar productos desde Airtable...");
+        const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_NAME}`;
+        
         const respuesta = await fetch(url, {
+            method: "GET",
             headers: {
-                Authorization: `Bearer ${AIRTABLE_TOKEN}`
+                "Authorization": `Bearer ${AIRTABLE_TOKEN}`,
+                "Content-Type": "application/json"
             }
         });
         
+        if (!respuesta.ok) throw new Error("No se pudo conectar con Airtable");
+
         const datos = await respuesta.json();
         
-        // Transformamos el formato raro de Airtable al formato limpio que ya usaba tu web
-        const productos = datos.records.map(record => {
+        // Transformamos el formato de Airtable al formato original de Meche
+        productosBaseDeDatos = datos.records.map(record => {
+            // Manejo de categorías por si en Airtable las escriben separadas por comas
+            let categoriasArray = record.fields.categorias || "";
+            if (typeof categoriasArray === 'string') {
+                categoriasArray = categoriasArray.toLowerCase().split(',').map(c => c.trim());
+            }
+
             return {
                 id: record.fields.id,
                 nombre: record.fields.nombre,
                 precio: record.fields.precio,
-                categoria: record.fields.categoria,
+                precio_oferta: record.fields.precio_oferta || (record.fields.precio * 0.8), // Failsafe
+                categoria: record.fields.categoria ? record.fields.categoria.toLowerCase() : "",
+                categorias: categoriasArray,
                 color: record.fields.color,
                 imagen: record.fields.imagen,
-                stock: record.fields.stock // Si es checkbox, devolverá true o false
+                stock: record.fields.stock, // Checkbox en Airtable
+                promo: record.fields.promo // Checkbox en Airtable
             };
         });
 
-        // FILTRAR SOLO LOS QUE TIENEN STOCK (Opcional)
-        const productosActivos = productos.filter(p => p.stock === true);
+        // Filtrar solo los productos que tienen el stock activo (checkbox tildado)
+        productosBaseDeDatos = productosBaseDeDatos.filter(p => p.stock === true || p.stock > 0);
 
-        // Acá llamás a la función que ya tenías armada para renderizar las tarjetitas HTML
-        renderizarProductos(productosActivos);
+        console.log("Productos cargados con éxito desde Airtable:", productosBaseDeDatos);
+        
+        // Ejecutamos las funciones según la página donde estemos
+        if (document.querySelector('.showroom')) {
+            mostrarProductos(productosBaseDeDatos);
+        }
+        
+        if (document.getElementById('track-promos') || document.getElementById('track-temporada')) {
+            cargarCarruseles();
+        }
+
+        if (document.getElementById('carouselTrack')) {
+            cargarIndex();
+        }
 
     } catch (error) {
-        console.error("Hubo un problema al conectar con el inventario de Airtable", error);
+        console.error("Error detallado al cargar desde Airtable:", error);
     }
 }
-
-// Ejecutamos la función al cargar la página
-document.addEventListener("DOMContentLoaded", cargarCatalogoDesdeAirtable);
 
 // --- 2. MOSTRAR EN CATÁLOGO (categorias.html) ---
 function mostrarProductos(lista) {
@@ -214,8 +239,11 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.filter-item').forEach(b => b.classList.remove('active'));
             e.target.classList.add('active');
             const cat = e.target.getAttribute('data-categoria');
-            if (cat === 'todos') mostrarProductos(productosBaseDeDatos);
-            else mostrarProductos(productosBaseDeDatos.filter(p => p.categorias && p.categorias.includes(cat)));
+            if (cat === 'todos') {
+                mostrarProductos(productosBaseDeDatos);
+            } else {
+                mostrarProductos(productosBaseDeDatos.filter(p => p.categoria === cat || p.categorias.includes(cat)));
+            }
         });
     });
 
