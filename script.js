@@ -33,28 +33,49 @@ async function cargarProductos() {
 
         const datos = await respuesta.json();
         
-        // Transformamos el formato de Airtable al formato original de Meche
+        // Transformamos el formato respetando LAS MAYÚSCULAS exactas de tu Airtable
         productosBaseDeDatos = datos.records.map(record => {
-            // Manejo de categorías por si en Airtable las escriben separadas por comas
-            let categoriasArray = record.fields.categorias || "";
+            let categoriasArray = record.fields.Categoria || "";
             if (typeof categoriasArray === 'string') {
                 categoriasArray = categoriasArray.toLowerCase().split(',').map(c => c.trim());
             }
 
             return {
-                id: record.fields.id,
-                nombre: record.fields.nombre,
-                precio: record.fields.precio,
-                precio_oferta: record.fields.precio_oferta || (record.fields.precio * 0.8), // Failsafe
-                categoria: record.fields.categoria ? record.fields.categoria.toLowerCase() : "",
+                id: record.fields.ID,                      // Mayúsculas como en Airtable
+                nombre: record.fields.Nombre,              // Mayúsculas como en Airtable
+                precio: record.fields.Precio,              // Mayúsculas como en Airtable
+                precio_oferta: record.fields.Precio_oferta || (record.fields.Precio * 0.8), 
+                categoria: record.fields.Categoria ? record.fields.Categoria.toLowerCase() : "",
                 categorias: categoriasArray,
-                color: record.fields.color,
-                imagen: record.fields.imagen,
-                stock: record.fields.stock, // Checkbox en Airtable
-                promo: record.fields.promo // Checkbox en Airtable
+                color: record.fields.Color,
+                imagen: record.fields.Imagen,
+                stock: record.fields.Stock,                // Acá estaba el problema!
+                promo: record.fields.Promo 
             };
         });
 
+        // Filtrar solo los productos que tienen el stock activo (checkbox tildado)
+        productosBaseDeDatos = productosBaseDeDatos.filter(p => p.stock === true || p.stock > 0);
+
+        console.log("Productos cargados con éxito desde Airtable:", productosBaseDeDatos);
+        
+        // Ejecutamos las funciones según la página donde estemos
+        if (document.querySelector('.showroom')) {
+            mostrarProductos(productosBaseDeDatos);
+        }
+        
+        if (document.getElementById('track-promos') || document.getElementById('track-temporada')) {
+            cargarCarruseles();
+        }
+
+        if (document.getElementById('carouselTrack')) {
+            cargarIndex();
+        }
+
+    } catch (error) {
+        console.error("Error detallado al cargar desde Airtable:", error);
+    }
+}
         // Filtrar solo los productos que tienen el stock activo (checkbox tildado)
         productosBaseDeDatos = productosBaseDeDatos.filter(p => p.stock === true || p.stock > 0);
 
