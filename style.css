@@ -807,3 +807,24 @@ body {
     .modal-info { width: 100%; }
     .modal-content { padding: 20px; max-height: 90vh; overflow-y: auto;}
 }
+/* ==========================================
+   BOTÓN + INFO (CATÁLOGO)
+   ========================================== */
+.btn-info {
+    background: transparent;
+    border: 1px solid #333;
+    color: #333;
+    padding: 8px 15px;
+    margin-top: 15px;
+    cursor: pointer;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: 0.3s;
+    width: 100%;
+}
+.btn-info:hover {
+    background: #333;
+    color: #fff;
+}
