@@ -6,8 +6,6 @@ let descuentoCupon = 0;
 // ==========================================
 // CONFIGURACIÓN DE CONEXIÓN CON AIRTABLE
 // ==========================================
-
-// Dividimos el token para que el bot de seguridad no lo detecte
 const PARTE1 = "patvZCAMG9UvTmMdq."; 
 const PARTE2 = "6a48e658f1c90effda8a00aade6a2d432556692c448286dbe3ac61af93e5d6b0";
 
@@ -33,7 +31,6 @@ async function cargarProductos() {
         const datos = await respuesta.json();
         
         productosBaseDeDatos = datos.records.map(record => {
-            // Arreglo definitivo para el bug de los Filtros
             let catRaw = record.fields.Categoria;
             let categoriaPrincipal = "";
             let categoriasArray = [];
@@ -46,7 +43,6 @@ async function cargarProductos() {
                 categoriaPrincipal = categoriasArray[0] || "";
             }
 
-            // Arreglo para Precio Oferta Manual
             let precioRegular = record.fields.Precio || 0;
             let precioOferta = record.fields['Precio Oferta'];
             if (precioOferta === undefined || precioOferta === null || precioOferta === "") {
@@ -81,7 +77,7 @@ async function cargarProductos() {
     }
 }
 
-// --- 2. MOSTRAR EN CATÁLOGO (categorias.html) ---
+// --- 2. MOSTRAR EN CATÁLOGO ---
 function mostrarProductos(lista) {
     const contenedor = document.querySelector('.showroom');
     if (!contenedor) return; 
@@ -90,17 +86,19 @@ function mostrarProductos(lista) {
     lista.forEach(producto => {
         const precioFinal = producto.precio_oferta < producto.precio ? producto.precio_oferta : producto.precio;
         
+        // La imagen ya NO abre el modal. Ahora hay un botón "+ Info" abajo.
         contenedor.innerHTML += `
             <div class="product-card reveal active">
-                <div class="img-container" onclick="abrirModalProducto('${producto.id}')" style="cursor:pointer;" title="Ver detalles">
+                <div class="img-container">
                     <img src="${producto.imagen}" alt="${producto.nombre}">
-                    <button class="add-to-cart-btn" onclick="event.stopPropagation(); agregarAlCarrito('${producto.id}')">Añadir +</button>
+                    <button class="add-to-cart-btn" onclick="agregarAlCarrito('${producto.id}')">Añadir +</button>
                     ${producto.precio_oferta < producto.precio ? '<span class="tag-promo">SALE</span>' : ''}
                 </div>
                 <div class="product-info">
                     <h3>${producto.nombre}</h3>
                     <p class="color-text">${producto.color || ''}</p>
                     <span class="price">$${precioFinal.toLocaleString('es-AR')}</span>
+                    <button class="btn-info" onclick="abrirModalProducto('${producto.id}')">+ INFO</button>
                 </div>
             </div>
         `;
@@ -245,18 +243,19 @@ async function cargarCarruseles() {
     productosBaseDeDatos.forEach(p => {
         const precioFinal = p.precio_oferta < p.precio ? p.precio_oferta : p.precio;
 
-        // Carruseles ahora usan exactamente el mismo diseño que el catálogo (con botón de Ver)
+        // Carrusel ahora tiene el botón + Info
         const html = `
             <div class="product-card reveal active" style="min-width: 280px; flex-shrink: 0; margin-right: 20px;">
-                <div class="img-container" onclick="abrirModalProducto('${p.id}')" style="cursor:pointer;" title="Ver detalles">
+                <div class="img-container">
                     <img src="${p.imagen}" alt="${p.nombre}">
-                    <button class="add-to-cart-btn" onclick="event.stopPropagation(); agregarAlCarrito('${p.id}')">Añadir +</button>
+                    <button class="add-to-cart-btn" onclick="agregarAlCarrito('${p.id}')">Añadir +</button>
                     ${p.precio_oferta < p.precio ? '<span class="tag-promo">SALE</span>' : ''}
                 </div>
                 <div class="product-info">
                     <h3>${p.nombre}</h3>
                     <p class="color-text">${p.color || ''}</p>
                     <span class="price">$${precioFinal.toLocaleString('es-AR')}</span>
+                    <button class="btn-info" onclick="abrirModalProducto('${p.id}')">+ INFO</button>
                 </div>
             </div>
         `;
@@ -270,16 +269,22 @@ async function cargarCarruseles() {
 document.addEventListener('DOMContentLoaded', () => {
     cargarProductos();
 
-    // Filtros de Categorías
+    // Filtros de Categorías arreglados
     document.querySelectorAll('.filter-item').forEach(boton => {
         boton.addEventListener('click', (e) => {
             e.preventDefault();
             document.querySelectorAll('.filter-item').forEach(b => b.classList.remove('active'));
             e.target.classList.add('active');
+            
             const cat = e.target.getAttribute('data-categoria');
+            
             if (cat === 'todos') {
                 mostrarProductos(productosBaseDeDatos);
+            } else if (cat === 'promociones') {
+                // Filtro especial para Promociones
+                mostrarProductos(productosBaseDeDatos.filter(p => p.promo === true));
             } else {
+                // Filtro para el resto (Pantalones, Vestidos, etc.)
                 mostrarProductos(productosBaseDeDatos.filter(p => p.categoria === cat || p.categorias.includes(cat)));
             }
         });
