@@ -4,33 +4,49 @@ let carrito = [];
 let descuentoCupon = 0;
 
 // --- 1. CARGA DE PRODUCTOS ---
-async function cargarProductos() {
+// CONFIGURACIÓN DE AIRTABLE (Reemplazá con tus datos reales)
+const AIRTABLE_TOKEN = "patSQVTxZDI4Irns8";
+const AIRTABLE_BASE_ID = "appnJ7n0NqpRVeoud";
+const AIRTABLE_TABLE_NAME = "Inventario MECHE";
+
+async function cargarCatalogoDesdeAirtable() {
+    const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_NAME}`;
+    
     try {
-        console.log("Intentando cargar productos...");
-        const respuesta = await fetch('./inventario.json');
+        const respuesta = await fetch(url, {
+            headers: {
+                Authorization: `Bearer ${AIRTABLE_TOKEN}`
+            }
+        });
         
-        if (!respuesta.ok) throw new Error("No se pudo encontrar el archivo inventario.json");
+        const datos = await respuesta.json();
+        
+        // Transformamos el formato raro de Airtable al formato limpio que ya usaba tu web
+        const productos = datos.records.map(record => {
+            return {
+                id: record.fields.id,
+                nombre: record.fields.nombre,
+                precio: record.fields.precio,
+                categoria: record.fields.categoria,
+                color: record.fields.color,
+                imagen: record.fields.imagen,
+                stock: record.fields.stock // Si es checkbox, devolverá true o false
+            };
+        });
 
-        productosBaseDeDatos = await respuesta.json();
-        console.log("Productos cargados con éxito:", productosBaseDeDatos);
-        
-        // Ejecutamos las funciones según la página donde estemos
-        if (document.querySelector('.showroom')) {
-            mostrarProductos(productosBaseDeDatos);
-        }
-        
-        if (document.getElementById('track-promos') || document.getElementById('track-temporada')) {
-            cargarCarruseles();
-        }
+        // FILTRAR SOLO LOS QUE TIENEN STOCK (Opcional)
+        const productosActivos = productos.filter(p => p.stock === true);
 
-        if (document.getElementById('carouselTrack')) {
-            cargarIndex();
-        }
+        // Acá llamás a la función que ya tenías armada para renderizar las tarjetitas HTML
+        renderizarProductos(productosActivos);
 
     } catch (error) {
-        console.error("Error detallado:", error);
+        console.error("Error al conectar con Airtable:", error);
     }
 }
+
+// Ejecutamos la función al cargar la página
+document.addEventListener("DOMContentLoaded", cargarCatalogoDesdeAirtable);
 
 // --- 2. MOSTRAR EN CATÁLOGO (categorias.html) ---
 function mostrarProductos(lista) {
