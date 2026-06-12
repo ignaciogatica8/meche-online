@@ -28,61 +28,74 @@ async function cargarProductos() {
             }
         });
         
-        if (!respuesta.ok) throw new Error(`No se pudo conectar: ${respuesta.status}`);
+        if (!respuesta.ok) throw new Error(`Error: ${respuesta.status}`);
 
         const datos = await respuesta.json();
         
         productosBaseDeDatos = datos.records.map(record => {
-            let categoriasArray = record.fields.Categoria || "";
-            if (typeof categoriasArray === 'string') {
-                categoriasArray = categoriasArray.toLowerCase().split(',').map(c => c.trim());
+            // Arreglo definitivo para el bug de los Filtros
+            let catRaw = record.fields.Categoria;
+            let categoriaPrincipal = "";
+            let categoriasArray = [];
+
+            if (Array.isArray(catRaw)) {
+                categoriasArray = catRaw.map(c => String(c).toLowerCase().trim());
+                categoriaPrincipal = categoriasArray[0] || "";
+            } else if (typeof catRaw === 'string') {
+                categoriasArray = catRaw.toLowerCase().split(',').map(c => c.trim());
+                categoriaPrincipal = categoriasArray[0] || "";
+            }
+
+            // Arreglo para Precio Oferta Manual
+            let precioRegular = record.fields.Precio || 0;
+            let precioOferta = record.fields['Precio Oferta'];
+            if (precioOferta === undefined || precioOferta === null || precioOferta === "") {
+                precioOferta = precioRegular;
             }
 
             return {
                 id: record.fields.ID || record.id, 
                 nombre: record.fields.Nombre || "Sin nombre",
                 descripcion: record.fields.Descripcion || "Sin descripción adicional.",
-                precio: record.fields.Precio || 0,
-                precio_oferta: record.fields['Precio Oferta'] || record.fields.Precio, 
-                categoria: record.fields.Categoria ? record.fields.Categoria.toLowerCase() : "",
+                precio: precioRegular,
+                precio_oferta: precioOferta, 
+                categoria: categoriaPrincipal,
                 categorias: categoriasArray,
                 color: record.fields.Color || "",
                 imagen: record.fields.Imagen || "",
                 stock: record.fields.Stock, 
                 promo: record.fields.Promo,
-                temporada: record.fields.Temporada || false // Nueva columna
+                temporada: record.fields.Temporada || false
             };
         });
 
-        // Activamos el filtro para mostrar solo los que tienen stock
+        // Filtrar solo los que tienen stock
         productosBaseDeDatos = productosBaseDeDatos.filter(p => p.stock === true || p.stock > 0);
         
-        // Ejecutamos las funciones según la página donde estemos
+        // Ejecutar vistas
         if (document.querySelector('.showroom')) mostrarProductos(productosBaseDeDatos);
         if (document.getElementById('track-promos') || document.getElementById('track-temporada')) cargarCarruseles();
-        if (document.getElementById('carouselTrack')) cargarIndex();
 
     } catch (error) {
-        console.error("❌ Error detallado al cargar desde Airtable:", error);
+        console.error("❌ Error al cargar Airtable:", error);
     }
 }
 
-// --- 2. MOSTRAR EN CATÁLOGO ---
+// --- 2. MOSTRAR EN CATÁLOGO (categorias.html) ---
 function mostrarProductos(lista) {
     const contenedor = document.querySelector('.showroom');
     if (!contenedor) return; 
 
     contenedor.innerHTML = ''; 
     lista.forEach(producto => {
-        const precioFinal = producto.promo ? producto.precio_oferta : producto.precio;
+        const precioFinal = producto.precio_oferta < producto.precio ? producto.precio_oferta : producto.precio;
         
-        // Al tocar la imagen, se abre el modal
         contenedor.innerHTML += `
             <div class="product-card reveal active">
-                <div class="img-container">
-                    <img src="${producto.imagen}" alt="${producto.nombre}" onclick="abrirModalProducto('${producto.id}')" style="cursor:pointer;">
-                    <button class="add-to-cart-btn" onclick="agregarAlCarrito('${producto.id}')">Añadir +</button>
-                    ${producto.promo ? '<span class="tag-promo">SALE</span>' : ''}
+                <div class="img-container" onclick="abrirModalProducto('${producto.id}')" style="cursor:pointer;" title="Ver detalles">
+                    <img src="${producto.imagen}" alt="${producto.nombre}">
+                    <button class="add-to-cart-btn" onclick="event.stopPropagation(); agregarAlCarrito('${producto.id}')">Añadir +</button>
+                    ${producto.precio_oferta < producto.precio ? '<span class="tag-promo">SALE</span>' : ''}
                 </div>
                 <div class="product-info">
                     <h3>${producto.nombre}</h3>
@@ -99,21 +112,18 @@ function abrirModalProducto(id) {
     const producto = productosBaseDeDatos.find(p => p.id == id);
     if(!producto) return;
 
-    // Rellenamos los datos del Pop-up
     document.getElementById('modal-img').src = producto.imagen;
     document.getElementById('modal-title').innerText = producto.nombre;
     document.getElementById('modal-desc').innerText = producto.descripcion;
     
-    // Calcular precios para el Pop-up
-    const precioFinal = producto.promo ? producto.precio_oferta : producto.precio;
+    const precioFinal = producto.precio_oferta < producto.precio ? producto.precio_oferta : producto.precio;
     let precioHTML = `$${precioFinal.toLocaleString('es-AR')}`;
     
-    if (producto.promo && producto.precio_oferta < producto.precio) {
-        precioHTML = `<span style="text-decoration: line-through; color: #999; font-size:1rem; margin-right:10px;">$${producto.precio.toLocaleString('es-AR')}</span> <span style="color:#d4a373;">$${precioFinal.toLocaleString('es-AR')}</span>`;
+    if (producto.precio_oferta < producto.precio) {
+        precioHTML = `<span style="text-decoration: line-through; color: #999; font-size:1.1rem; margin-right:10px;">$${producto.precio.toLocaleString('es-AR')}</span> <span style="color:#d4a373;">$${precioFinal.toLocaleString('es-AR')}</span>`;
     }
     document.getElementById('modal-price').innerHTML = precioHTML;
 
-    // Calcular Stock para el Pop-up
     const stockEl = document.getElementById('modal-stock');
     if (producto.stock === true) {
         stockEl.innerText = "✓ Disponible en Stock";
@@ -126,14 +136,12 @@ function abrirModalProducto(id) {
         stockEl.className = "stock-status out-stock";
     }
 
-    // Configurar el botón de agregar
     const btnAdd = document.getElementById('modal-btn-add');
     btnAdd.onclick = () => {
         agregarAlCarrito(producto.id);
         cerrarModalProducto();
     };
 
-    // Mostrar el Pop-up
     document.getElementById('product-modal').style.display = "flex";
 }
 
@@ -141,12 +149,9 @@ function cerrarModalProducto() {
     document.getElementById('product-modal').style.display = "none";
 }
 
-// Cerrar el pop-up si hacen click afuera del recuadro blanco
 document.addEventListener('click', function(event) {
     const modal = document.getElementById('product-modal');
-    if (event.target === modal) {
-        cerrarModalProducto();
-    }
+    if (event.target === modal) cerrarModalProducto();
 });
 
 // --- 4. LÓGICA DEL CARRITO ---
@@ -189,7 +194,7 @@ function renderizarCarrito() {
     countDisplay.innerText = carrito.length;
 
     carrito.forEach((item, index) => {
-        const precioItem = item.promo ? item.precio_oferta : item.precio;
+        const precioItem = item.precio_oferta < item.precio ? item.precio_oferta : item.precio;
         subtotal += precioItem;
 
         container.innerHTML += `
@@ -225,7 +230,7 @@ function aplicarCupon() {
     }
 }
 
-// --- 5. CARRUSELES E INDEX ---
+// --- 5. CARRUSELES ---
 function moveCarousel(trackId, direction) {
     const track = document.getElementById(trackId);
     if (!track) return;
@@ -238,26 +243,25 @@ async function cargarCarruseles() {
     const trackTemporada = document.getElementById('track-temporada');
 
     productosBaseDeDatos.forEach(p => {
-        const cuotaValor = Math.round(p.precio / 3);
-        const precioFinal = p.promo ? p.precio_oferta : p.precio;
+        const precioFinal = p.precio_oferta < p.precio ? p.precio_oferta : p.precio;
 
+        // Carruseles ahora usan exactamente el mismo diseño que el catálogo (con botón de Ver)
         const html = `
-            <div class="product-card">
-                <img src="${p.imagen}" alt="${p.nombre}" onclick="abrirModalProducto('${p.id}')" style="cursor:pointer;">
-                <div class="product-info" style="text-align:left;">
-                    <p style="font-size:0.7rem; text-transform:uppercase;">${p.nombre}</p>
-                    <div class="price-box">
-                        <span class="old-price-carousel">$${precioFinal.toLocaleString('es-AR')}</span>
-                        <span class="cuotas">3 cuotas de $${cuotaValor.toLocaleString('es-AR')} sin interés</span>
-                        <span class="price-transfer">$${(precioFinal * 0.9).toLocaleString('es-AR')} por Transferencia</span>
-                    </div>
-                    <button class="btn-comprar-mini" onclick="agregarAlCarrito('${p.id}')">Comprar</button>
+            <div class="product-card reveal active" style="min-width: 280px; flex-shrink: 0; margin-right: 20px;">
+                <div class="img-container" onclick="abrirModalProducto('${p.id}')" style="cursor:pointer;" title="Ver detalles">
+                    <img src="${p.imagen}" alt="${p.nombre}">
+                    <button class="add-to-cart-btn" onclick="event.stopPropagation(); agregarAlCarrito('${p.id}')">Añadir +</button>
+                    ${p.precio_oferta < p.precio ? '<span class="tag-promo">SALE</span>' : ''}
+                </div>
+                <div class="product-info">
+                    <h3>${p.nombre}</h3>
+                    <p class="color-text">${p.color || ''}</p>
+                    <span class="price">$${precioFinal.toLocaleString('es-AR')}</span>
                 </div>
             </div>
         `;
-        if (p.promo && trackPromos) trackPromos.innerHTML += html;
         
-        // Ahora lee el Checkbox de "Temporada" de Airtable
+        if (p.promo && trackPromos) trackPromos.innerHTML += html;
         if (p.temporada && trackTemporada) trackTemporada.innerHTML += html;
     });
 }
@@ -281,7 +285,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Botones Carrito
     const btnCerrar = document.getElementById('close-cart');
     const overlay = document.getElementById('cart-overlay');
     const btnOpenNav = document.getElementById('open-cart-nav');
@@ -301,12 +304,10 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // Métodos de pago
     document.querySelectorAll('input[name="payment"]').forEach(input => {
         input.addEventListener('change', renderizarCarrito);
     });
 
-    // Pop-up Newsletter
     setTimeout(() => {
         const popup = document.getElementById('newsletter-popup');
         if(popup && !localStorage.getItem('popupShown')) {
