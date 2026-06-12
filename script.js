@@ -13,7 +13,7 @@ const PARTE2 = "6a48e658f1c90effda8a00aade6a2d432556692c448286dbe3ac61af93e5d6b0
 
 const AIRTABLE_TOKEN = PARTE1 + PARTE2; // El código los une sin que el bot se entere
 const AIRTABLE_BASE_ID = "appnJ7n0NqpRVeoud";
-const AIRTABLE_TABLE_NAME = "Stock";
+const AIRTABLE_TABLE_NAME = "stock";
 
 // --- 1. CARGA DE PRODUCTOS DESDE AIRTABLE ---
 async function cargarProductos() {
