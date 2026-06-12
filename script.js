@@ -56,8 +56,8 @@ async function cargarProductos() {
             };
         });
 
-        // ⚠️ Filtro desactivado temporalmente para diagnosticar
-        // productosBaseDeDatos = productosBaseDeDatos.filter(p => p.stock === true || p.stock > 0);
+        // Activamos el filtro para mostrar solo los que tienen stock
+        productosBaseDeDatos = productosBaseDeDatos.filter(p => p.stock === true || p.stock > 0);
 
         console.log("📦 Productos listos para mostrar:", productosBaseDeDatos);
         
@@ -88,7 +88,6 @@ function mostrarProductos(lista) {
     lista.forEach(producto => {
         const precioFinal = producto.promo ? producto.precio_oferta : producto.precio;
         
-        // Usamos comillas simples en el ID por si Airtable lo manda como texto
         contenedor.innerHTML += `
             <div class="product-card reveal active">
                 <div class="img-container">
@@ -174,4 +173,126 @@ function aplicarCupon() {
     if (codigo && codigo.toUpperCase() === "BIENVENIDA5") {
         descuentoCupon = 0.05;
         const msg = document.getElementById('coupon-applied-msg');
-        const btn = document
+        const btn = document.getElementById('btn-cupon');
+        if (msg) msg.style.display = 'block';
+        if (btn) btn.style.display = 'none';
+        renderizarCarrito();
+    } else {
+        alert("El código ingresado no es válido.");
+    }
+}
+
+// --- 4. CARRUSELES E INDEX ---
+function moveCarousel(trackId, direction) {
+    const track = document.getElementById(trackId);
+    if (!track) return;
+    const cardWidth = track.querySelector('.product-card').clientWidth + 20;
+    track.scrollLeft += (cardWidth * direction);
+}
+
+async function cargarCarruseles() {
+    const trackPromos = document.getElementById('track-promos');
+    const trackTemporada = document.getElementById('track-temporada');
+
+    productosBaseDeDatos.forEach(p => {
+        const cuotaValor = Math.round(p.precio / 3);
+        const html = `
+            <div class="product-card">
+                <img src="${p.imagen}" alt="${p.nombre}">
+                <div class="product-info" style="text-align:left;">
+                    <p style="font-size:0.7rem; text-transform:uppercase;">${p.nombre}</p>
+                    <div class="price-box">
+                        <span class="old-price-carousel">$${p.precio.toLocaleString('es-AR')}</span>
+                        <span class="cuotas">3 cuotas de $${cuotaValor.toLocaleString('es-AR')} sin interés</span>
+                        <span class="price-transfer">$${(p.precio * 0.9).toLocaleString('es-AR')} por Transferencia</span>
+                    </div>
+                    <button class="btn-comprar-mini" onclick="agregarAlCarrito('${p.id}')">Comprar</button>
+                </div>
+            </div>
+        `;
+        if (p.promo && trackPromos) trackPromos.innerHTML += html;
+        if (p.categorias && p.categorias.includes('invierno') && trackTemporada) trackTemporada.innerHTML += html;
+    });
+}
+
+async function cargarIndex() {
+    const track = document.getElementById('carouselTrack');
+    if (!track) return;
+    
+    const tendencias = productosBaseDeDatos.filter(p => p.promo === true || p.id <= 4);
+    tendencias.forEach(p => {
+        track.innerHTML += `
+            <div class="product-card">
+                <div class="img-container">
+                    <img src="${p.imagen}" alt="${p.nombre}">
+                </div>
+                <div class="product-info">
+                    <h3>${p.nombre}</h3>
+                    <span class="price">$${p.precio.toLocaleString('es-AR')}</span>
+                </div>
+            </div>
+        `;
+    });
+}
+
+// --- 5. EVENTOS Y LISTENERS ---
+document.addEventListener('DOMContentLoaded', () => {
+    cargarProductos();
+
+    // Filtros de Categorías
+    document.querySelectorAll('.filter-item').forEach(boton => {
+        boton.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.querySelectorAll('.filter-item').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            const cat = e.target.getAttribute('data-categoria');
+            if (cat === 'todos') {
+                mostrarProductos(productosBaseDeDatos);
+            } else {
+                // Filtra comparando tanto con "categoria" como con "categorias" (array)
+                mostrarProductos(productosBaseDeDatos.filter(p => p.categoria === cat || p.categorias.includes(cat)));
+            }
+        });
+    });
+
+    // Botones Carrito
+    const btnCerrar = document.getElementById('close-cart');
+    const overlay = document.getElementById('cart-overlay');
+    const btnOpenNav = document.getElementById('open-cart-nav');
+    const btnFinalizar = document.getElementById('btn-finalizar');
+
+    if (btnCerrar) btnCerrar.onclick = toggleCart;
+    if (overlay) overlay.onclick = toggleCart;
+    if (btnOpenNav) btnOpenNav.onclick = (e) => { e.preventDefault(); toggleCart(); };
+    
+    if (btnFinalizar) {
+        btnFinalizar.onclick = () => {
+            if (carrito.length === 0) return alert("Tu carrito está vacío");
+            const metodo = document.querySelector('input[name="payment"]:checked').value;
+            const total = document.getElementById('cart-total-display').innerText;
+            if (metodo === 'efectivo') alert(`¡Gracias! Pagarás ${total} en el showroom.`);
+            else window.location.href = "https://www.mercadopago.com.ar/";
+        };
+    }
+
+    // Métodos de pago
+    document.querySelectorAll('input[name="payment"]').forEach(input => {
+        input.addEventListener('change', renderizarCarrito);
+    });
+
+    // Pop-up
+    setTimeout(() => {
+        const popup = document.getElementById('newsletter-popup');
+        if(popup && !localStorage.getItem('popupShown')) {
+            popup.style.display = 'flex';
+        }
+    }, 3000);
+
+    const btnClosePopup = document.getElementById('close-popup');
+    if (btnClosePopup) {
+        btnClosePopup.onclick = () => {
+            document.getElementById('newsletter-popup').style.display = 'none';
+            localStorage.setItem('popupShown', 'true');
+        };
+    }
+});
